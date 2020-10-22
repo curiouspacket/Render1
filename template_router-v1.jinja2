@@ -1,0 +1,136 @@
+service timestamps debug datetime msec
+service password-encryption
+service unsupported-transceiver
+service timestamps log datetime msec
+service timestamps log datetime localtime 
+!
+!
+!
+logging buffered 40960
+no logging console
+!
+username cisco privilege 15 secret cisco
+!
+enable secret cisco
+!
+!
+!
+crypto key generate rsa modulus 2048
+!
+vtp mode transparent
+!
+clock timezone CST -6 0
+clock summer-time MDT recurring
+!
+!
+no ip domain lookup
+ip domain name test.lab
+!
+{# Beginning of Jinja Statements #}
+
+
+hostname {{ hostname }}
+!
+{% for interface in interfaces -%}
+	{% if interface['tunnel'] -%}
+		interface {{ interface['name'] }}
+			  description {{ interface['description']|upper }}
+			  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+			  {% if interface['tsource'] -%}tunnel source {{ interface['tsource'] }} {% endif %}
+			  {% if interface['tdestination'] -%}tunnel destination {{ interface['tdestination'] }} {% endif %}
+	{% else -%} 
+		interface {{ interface['name'] }}
+		  description {{ interface['description']|upper }}
+		  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+          {% if interface['vlan'] %}
+           switchport
+           switchport mode trunk
+           switchport trunk allowed vlan {{ interface['vlan'] }}
+          {% endif %
+		  {% if interface['enabled'] %}no {% endif %}shutdown
+		!
+	{% endif -%}
+{% endfor %}
+!
+{% for route in routes -%}
+    {% if route['vsat'] -%}
+        ip route vrf tallgrass-scada {{route['ip']}} {{route['mask']}} {{route['dest']}} {{route['ad']}}
+    {% else -%} 
+        ip route vrf tallgrass {{route['ip']}} {{route['mask']}} {{route['dest']}} {{route['ad']}}
+	{% endif %}
+{% endfor %}
+!
+{% for vlan in vlans -%}
+    {% if vlan['root'] -%}
+        spanning-tree vlan {{ vlan['id']}} priority 4096
+        !
+        vlan {{ vlan['id']}}
+        name {{ vlan['name']}}
+        !
+        interface Vlan {{ vlan['id'] }}
+        {% for rp in vlan.vrrp %}
+           ip {{ rp.ip }} 
+           vrrp {{ vlan['id']}} {{ rp.vip }}
+           vrrp {{ vlan['id']}} priority 100
+        {% endfor %}  
+    {% else -%} 
+        spanning-tree vlan {{ vlan['id']}} priority 8192
+        !
+        vlan {{ vlan['id']}}
+        name {{ vlan['name']}}
+        !
+        interface Vlan {{ vlan['id'] }}
+        {% for rp in vlan.vrrp %}
+           ip {{ rp.ip }} 
+           vrrp {{ vlan['id']}} {{ rp.vip }}
+           vrrp {{ vlan['id']}} priority 200
+        {% endfor %}  
+	{% endif %}
+{% endfor %}
+!
+
+snmp-server location {{ snmp['location'] }}
+
+{# End of Jinja Statements #}
+
+
+
+ip forward-protocol nd
+no ip http server
+no ip http authentication local
+no ip http secure-server
+!
+!
+ip ssh version 2
+ip ssh authentication-retries 5
+!
+!
+logging trap debugging
+logging host 10.210.240.100
+!
+snmp-server community 
+snmp-server host 
+!
+
+
+
+banner motd ^C
+############################################################
+                        Welcome
+############################################################
+^C       
+!
+ntp server 
+!
+line con 0
+ session-timeout 60 
+ exec-timeout 30 0
+line vty 0 4
+ session-timeout 60 
+ exec-timeout 30 0
+ transport input ssh
+line vty 5 15
+ session-timeout 60 
+ exec-timeout 30 0
+ transport input ssh
+!

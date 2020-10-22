@@ -8,28 +8,17 @@ service timestamps log datetime localtime
 !
 logging buffered 40960
 no logging console
-enable secret 9 $9$PTJSHQdvs3a9lP$BcFCTvIP0Wlq4sseUCHENtkgjXWv5T0/G7nKrHOK.66
-!
-aaa new-model
-!
-!
-aaa group server radius business
- server-private 10.210.240.160 key 7 022A574F26034E2F7C622C384112
- server-private 10.220.240.160 key 7 022A574F26034E2F7C622C384112
- ip radius source-interface Vlan200
-aaa authentication login default group business local
-aaa authentication login console local
+enable secret cisco
 !
 vtp mode transparent
 !
 !
-aaa session-id common
 clock timezone CST -6 0
 clock summer-time MDT recurring
 !
 !
 no ip domain lookup
-ip domain name tallgrassenergylp.com
+ip domain name test.lab
 !
 crypto key generate rsa modulus 2048
 !
@@ -40,7 +29,7 @@ ip igmp snooping
 spanning-tree mode rapid-pvst
 spanning-tree extend system-id
 !
-username techopsadmin privilege 15 secret 9 $9$BaBdF7z/4oDAdv$.CDoUeFwj1QMhrW141km/4Xug66nnWQkvYPN6ph7WRM
+username cisco privilege 15 secret cisco
 !
 !
 {# Beginning of Jinja Statements #}
@@ -143,54 +132,31 @@ ip ssh authentication-retries 5
 !
 !
 logging trap debugging
-logging host 10.210.240.100
+logging host 
 !
-snmp-server community T@LLgr^ss RO
-snmp-server host 10.210.240.95 T@LLgr^ss
+snmp-server community 
+snmp-server host 
 !
 
 
 
 banner motd ^CCCCC
 ############################################################
-|    You have connected to:                                |
-|                                                          |
-|          Tallgrass Energy LP. Internal Network,          |
-|                THIS IS A PRIVATE NETWORK!                |
-|                                                          |
-|    **************************************************    |
-|    *   WARNING   |                    |   WARNING   *    |
-|    *      !      |      LOGGING       |      !      *    |
-|    *------------------------------------------------*    |
-|    *    THIS SYSTEM IS FOR AUTHORIZED USERS ONLY    *    |
-|    *   THE SYSTEM IS ACTIVELY MONITORED AND LOGGED  *    |
-|    *     AS EVIDENCE FOR USE IN A COURT OF LAW      *    |
-|    *------------------------------------------------*    |
-|    *      !      |       ACTIVE       |      !      *    |
-|    *   WARNING   |                    |   WARNING   *    |
-|    **************************************************    |
-|                                                          |
+            Welcome
 ############################################################
 ^C       
 !
-ntp server 10.210.20.104
-ntp server 10.210.20.102
+ntp server 
 !
 line con 0
- login authentication console 
  session-timeout 60 
  exec-timeout 30 0
- logging synchronous
- transport input none
- stopbits 1
 line vty 0 4
  session-timeout 60 
  exec-timeout 30 0
- logging synchronous
  transport input ssh
 line vty 5 15
  session-timeout 60 
  exec-timeout 30 0
- logging synchronous
  transport input ssh
 !
