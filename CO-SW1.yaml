@@ -1,0 +1,69 @@
+hostname: CO-Lakewood-02-SW-0001
+
+
+interfaces:
+    - tunnel: false
+      name: GigabitEthernet1/1/1
+      description: Uplink to Core-01
+      ip: 
+      mask: 
+      enabled: true
+      switchport: false
+    - tunnel: false
+      name: GigabitEthernet1/1/2 
+      ip: 
+      mask:
+      switchport: false
+      enabled: true
+    - tunnel: false
+      name: range GigabitEthernet1/0/1-24
+      ip: 
+      mask:
+      switchport: true
+      enabled: true
+  # - tunnel: false
+      #name: GigabitEthernet0/1/1
+      #ip: 10.173.1.1
+      #mask: 255.255.254.0
+      #enabled: true
+routes:
+    - vsat: false
+    #- vsat: true
+      #ip: 0.0.0.0
+      #mask: 0.0.0.0
+      #dest: 10.179.1.1
+      #ad: 200
+      #description:
+vlans:
+    - root: 
+      name: Business
+      id: 200
+      vrrp:
+        - ip: 10.80.1.2
+          mask: 255.255.255.0
+    - root: 
+      name: SCADA
+      id: 300
+      vrrp:
+        - ip: 10.80.1.2
+          mask: 255.255.255.0
+router:
+
+
+switch:
+    - trunk: true
+      name: GigabitEthernet1/1/1
+      vlan: 200, 300, 
+      enabled: true
+    - trunk: false
+      name: range GigabitEthernet1/0/1-11
+      vlan: 200
+      enabled: true
+    - trunk: false
+      name: range GigabitEthernet1/0/11-24
+      vlan: 300 
+      enabled: false
+      
+misc:
+   - location: Lakewood,CO
+     routing: true

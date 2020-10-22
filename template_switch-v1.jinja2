@@ -1,0 +1,196 @@
+ervice timestamps debug datetime msec
+service password-encryption
+service unsupported-transceiver
+service timestamps log datetime msec
+service timestamps log datetime localtime 
+!
+!
+!
+logging buffered 40960
+no logging console
+enable secret 9 $9$PTJSHQdvs3a9lP$BcFCTvIP0Wlq4sseUCHENtkgjXWv5T0/G7nKrHOK.66
+!
+aaa new-model
+!
+!
+aaa group server radius business
+ server-private 10.210.240.160 key 7 022A574F26034E2F7C622C384112
+ server-private 10.220.240.160 key 7 022A574F26034E2F7C622C384112
+ ip radius source-interface Vlan200
+aaa authentication login default group business local
+aaa authentication login console local
+!
+vtp mode transparent
+!
+!
+aaa session-id common
+clock timezone CST -6 0
+clock summer-time MDT recurring
+!
+!
+no ip domain lookup
+ip domain name tallgrassenergylp.com
+!
+crypto key generate rsa modulus 2048
+!
+ip igmp snooping
+!
+!
+!
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+!
+username techopsadmin privilege 15 secret 9 $9$BaBdF7z/4oDAdv$.CDoUeFwj1QMhrW141km/4Xug66nnWQkvYPN6ph7WRM
+!
+!
+{# Beginning of Jinja Statements #}
+
+
+hostname {{ hostname }}
+!
+{% for interface in interfaces -%}
+	{% if interface['tunnel'] -%}
+		interface {{ interface['name'] }}
+			  description {{ interface['description']|upper }}
+			  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+			  {% if interface['tsource'] -%}tunnel source {{ interface['tsource'] }} {% endif %}
+			  {% if interface['tdestination'] -%}tunnel destination {{ interface['tdestination'] }} {% endif %}
+	{% else -%} 
+		interface {{ interface['name'] }}
+		  description {{ interface['description']|upper }}
+		  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+		  {% if interface['enabled'] %}no {% endif %}shutdown
+		!
+	{% endif -%}
+{% endfor %}
+!
+{% for route in routes -%}
+    {% if route['vsat'] -%}
+        ip route vrf tallgrass-scada {{route['ip']}} {{route['mask']}} {{route['dest']}} {{route['ad']}}
+    {% else -%} 
+        ip route vrf tallgrass {{route['ip']}} {{route['mask']}} {{route['dest']}} {{route['ad']}}
+	{% endif %}
+{% endfor %}
+!
+{% for vlan in vlans -%}
+    {% if vlan['root'] == true -%}
+        spanning-tree vlan {{ vlan['id']}} priority 4096
+        !
+        vlan {{ vlan['id']}}
+        name {{ vlan['name']}}
+        !
+        interface Vlan {{ vlan['id'] }}
+        {% for rp in vlan.vrrp %}
+           ip {{ rp.ip }} 
+           vrrp {{ vlan['id']}} {{ rp.vip }}
+           vrrp {{ vlan['id']}} priority 100
+        {% endfor %}  
+    {% elif vlan['root'] == false -%} 
+        spanning-tree vlan {{ vlan['id']}} priority 8192
+        !
+        vlan {{ vlan['id']}}
+        name {{ vlan['name']}}
+        !
+        interface Vlan {{ vlan['id'] }}
+        {% for rp in vlan.vrrp %}
+           ip {{ rp.ip }} 
+           vrrp {{ vlan['id']}} {{ rp.vip }}
+           vrrp {{ vlan['id']}} priority 200
+        {% endfor %}  
+    {% else -%}
+        spanning-tree vlan {{ vlan['id']}}
+        interface Vlan {{ vlan['id'] }}
+        {% for rp in vlan.vrrp -%}
+           ip {{ rp.ip }} {{rp.mask }}
+        {% endfor %}  
+   {% endif %}
+{% endfor %}
+!
+{% for interface in interfaces -%}
+	{% if interface['tunnel'] -%}
+		interface {{ interface['name'] }}
+			  description {{ interface['description']|upper }}
+			  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+			  {% if interface['tsource'] -%}tunnel source {{ interface['tsource'] }} {% endif %}
+			  {% if interface['tdestination'] -%}tunnel destination {{ interface['tdestination'] }} {% endif %}
+	{% else -%} 
+		interface {{ interface['name'] }}
+		  description {{ interface['description']|upper }}
+		  {% if interface['ip'] -%}ip address {{ interface['ip'] }} {{ interface['mask'] }}{% endif %}
+		  {% if interface['enabled'] %}no {% endif %}shutdown
+		!
+	{% endif -%}
+{% endfor %}
+
+!
+{# MISC config items #}
+{% for info in misc -%}
+ snmp-server location {{ info['location'] }}
+{% endfor %}
+
+{# End of Jinja Statements #}
+
+
+
+ip forward-protocol nd
+no ip http server
+no ip http authentication local
+no ip http secure-server
+!
+!
+ip ssh version 2
+ip ssh authentication-retries 5
+!
+!
+logging trap debugging
+logging host 10.210.240.100
+!
+snmp-server community T@LLgr^ss RO
+snmp-server host 10.210.240.95 T@LLgr^ss
+!
+
+
+
+banner motd ^CCCCC
+############################################################
+|    You have connected to:                                |
+|                                                          |
+|          Tallgrass Energy LP. Internal Network,          |
+|                THIS IS A PRIVATE NETWORK!                |
+|                                                          |
+|    **************************************************    |
+|    *   WARNING   |                    |   WARNING   *    |
+|    *      !      |      LOGGING       |      !      *    |
+|    *------------------------------------------------*    |
+|    *    THIS SYSTEM IS FOR AUTHORIZED USERS ONLY    *    |
+|    *   THE SYSTEM IS ACTIVELY MONITORED AND LOGGED  *    |
+|    *     AS EVIDENCE FOR USE IN A COURT OF LAW      *    |
+|    *------------------------------------------------*    |
+|    *      !      |       ACTIVE       |      !      *    |
+|    *   WARNING   |                    |   WARNING   *    |
+|    **************************************************    |
+|                                                          |
+############################################################
+^C       
+!
+ntp server 10.210.20.104
+ntp server 10.210.20.102
+!
+line con 0
+ login authentication console 
+ session-timeout 60 
+ exec-timeout 30 0
+ logging synchronous
+ transport input none
+ stopbits 1
+line vty 0 4
+ session-timeout 60 
+ exec-timeout 30 0
+ logging synchronous
+ transport input ssh
+line vty 5 15
+ session-timeout 60 
+ exec-timeout 30 0
+ logging synchronous
+ transport input ssh
+!
